@@ -27,10 +27,10 @@ sql/
 
 1. Manual Trigger
 2. Supabase, Get many rows, фильтр `age >= 25` (возвращает 8 гостей из 10)
-3. Loop Over Items, размер пачки 1
+3. Loop Over Items, размер пачки 3
 4. Basic LLM Chain + Groq Chat Model: промпт собирается из полей профиля гостя
 5. Edit Fields: `guest_id`, `full_name`, `invitation_text`
-6. Wait, 30 секунд (из-за лимита токенов бесплатного Groq)
+6. Wait, 60 секунд (из-за лимита токенов бесплатного Groq)
 7. Aggregate: все записи в один массив
 
 Результат: массив `{guest_id, full_name, invitation_text}`.
