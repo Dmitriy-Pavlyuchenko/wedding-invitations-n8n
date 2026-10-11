@@ -1,0 +1,264 @@
+{
+  "name": "My workflow",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "b872a1a2-c6d7-4be5-ada6-d159e745f438",
+      "name": "When clicking ‘Execute workflow’"
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "tableId": "guests",
+        "returnAll": true,
+        "matchType": "allFilters",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "age",
+              "condition": "gte",
+              "keyValue": "25"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        224,
+        0
+      ],
+      "id": "09b92ae5-5b35-4bf0-84a7-c71abed7b3df",
+      "name": "Get many rows",
+      "credentials": {
+        "supabaseApi": {
+          "id": "ao1pbGAX2uiPMMjo",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Напиши персональное приглашение на свадьбу на русском, 3-4 связных предложения одним абзацем. Пиши от лица пары: \"мы\", \"наша свадьба\", \"будем рады\". Слова \"я\", \"мой\" не используй.\n\nДанные гостя:\nИмя для обращения: {{ $json.full_name.split(' ')[0] }}\nПартнер: {{ $json.partner_name || 'нет' }}\nОбращение: {{ ($json.partner_name || $json.relation_type === 'colleague') ? 'на \"вы\"' : 'на \"ты\"' }}\nДети: {{ $json.children_count > 0 ? $json.children_count + ' (возраст: ' + $json.children_ages + ')' : 'нет' }}\nГод знакомства: {{ $json.relation_type === 'family' ? 'не упоминать' : $json.known_couple_since }}\nТип отношений: {{ $json.relation_type }}\nЗаметка о госте: {{ $json.notes }}\n\nПравила:\n- Начни с \"Дорогие {имя} и {имя партнера}!\" если партнер есть, иначе \"Дорогой/Дорогая {имя}!\". Дальше строго в указанной форме обращения, \"ты\" и \"вы\" не смешивай.\n- Партнера называй только по имени. Слова \"партнер\", \"муж\", \"жена\" не используй.\n- Роль гостя из заметки передай отдельным предложением в третьем лице, привязав к имени: \"Ирина сестра жениха\", \"Павел раньше был начальником жениха, а теперь близкий друг\". Не вставляй роль внутрь другого предложения. Нельзя: \"ваш друг\", \"вы, сестра жениха\", \"наш начальник\". Жених и невеста это мы.\n- Дети, если есть: несколько \"с детьми 4 и 7 лет\", один \"с ребенком, которому 3 года\". Пол не указывай, слова \"сын\", \"дочь\", \"малыш\" не используй. Если детей нет, о них не пиши.\n- Год знакомства: \"знакомы с {год} года\", только если он указан.\n- Тон: друзья тепло и лично, коллеги вежливо и сдержаннее, родственники по-семейному.\n- Не придумывай дату, место, воспоминания, черты характера, просьбу подтвердить участие, подпись.\n- Без переносов строк, markdown и длинных тире, только запятые. Штампы \"особенный день\" и \"с нетерпением ждем\" не используй.\n- Верни только текст приглашения.\n\nОбразцы стиля (выдуманные гости, факты не копируй):\n\"Дорогие Олег и Анна! Мы знакомы с 2015 года, и нам будет очень приятно разделить с вами нашу свадьбу. Олег давний друг жениха со школьных лет, поэтому для нас важно, чтобы вы были рядом. Будем рады видеть вас с ребенком, которому 5 лет.\"\n\"Дорогая Мария! Мы знакомы с 2018 года и будем рады видеть вас на нашей свадьбе. Вы работали вместе с невестой, и нам важно, чтобы вы разделили этот праздник с нами. Приходите, мы будем вам очень рады.\"",
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.9,
+      "position": [
+        704,
+        64
+      ],
+      "id": "923b166b-e265-4c16-aba3-593c34725915",
+      "name": "Basic LLM Chain",
+      "retryOnFail": false,
+      "waitBetweenTries": 5000
+    },
+    {
+      "parameters": {
+        "model": "openai/gpt-oss-120b",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGroq",
+      "typeVersion": 1,
+      "position": [
+        704,
+        288
+      ],
+      "id": "e2770ebe-9c1e-4358-83ec-771530702c30",
+      "name": "Groq Chat Model",
+      "credentials": {
+        "groqApi": {
+          "id": "owYVNAT4HJ0Hx4aB",
+          "name": "Groq account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "fbc3a1c1-294d-4c3e-8c69-d87c0f52b43e",
+              "name": "=guest_id",
+              "value": "={{ $('Loop Over Items').item.json.id }}",
+              "type": "number"
+            },
+            {
+              "id": "7190e47b-272f-4705-a4cf-dd17c2ef9768",
+              "name": "full_name",
+              "value": "={{ $('Loop Over Items').item.json.full_name }}",
+              "type": "string"
+            },
+            {
+              "id": "16a1138f-05cb-4d6d-b368-a9e32eb1706e",
+              "name": "=invitation_text",
+              "value": "={{ $json.text }}",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "include": "selected",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        1056,
+        64
+      ],
+      "id": "68595df8-c821-477d-962a-11940b3d8a15",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "aggregate": "aggregateAllItemData",
+        "destinationFieldName": "=invitations",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.aggregate",
+      "typeVersion": 1,
+      "position": [
+        1488,
+        -16
+      ],
+      "id": "42809b26-1208-4b60-84c3-ecdbc0719e69",
+      "name": "Aggregate"
+    },
+    {
+      "parameters": {
+        "batchSize": 3,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        448,
+        0
+      ],
+      "id": "bad848bd-7b15-4732-80d3-1fabdc6eac92",
+      "name": "Loop Over Items"
+    },
+    {
+      "parameters": {
+        "amount": 60
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        1280,
+        64
+      ],
+      "id": "dbf3f117-65d2-4d5b-9951-5baf4a9a192e",
+      "name": "Wait",
+      "webhookId": "b939aaa6-6a7d-42a8-9461-8eea764d3c16"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "Get many rows",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get many rows": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Groq Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Basic LLM Chain": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "Wait",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Items": {
+      "main": [
+        [
+          {
+            "node": "Aggregate",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "9db7e618-12ec-496d-b5ec-4ca6e2fc52b2",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "dfc48f17e120ef699c8920d36611d4131eee423b2c139681eaaf6a722f31c22e"
+  },
+  "nodeGroups": [],
+  "id": "RoR9iyGknXKSE8qy",
+  "tags": []
+}
